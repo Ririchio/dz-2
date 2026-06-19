@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    Пост
+{% endblock %}
+
+{% block body %}
+    <div>
+        {{ post.title }}
+    </div>
+    <div>
+        {{ post.description }}
+    </div>
+    <div>
+        <a href="{{ path('app_post_edit', { 'id': post.id } ) }}">Редактировать пост</a>
+    </div>
+    <div>
+        <form action="{{ path('app_post_delete', { 'id': post.id } ) }}" method="post" onsubmit="return confirm('Вы уверены?');">
+            <button>Удалить пост</button>
+        </form>
+    </div>
+    <div>
+        <a href="{{ path('app_post' )}}">Ко всем постам</a>
+    </div>
+        <div style="margin: 5px;">
+        <h1>Комментарии</h1>
+        <div>
+            Добавить коментарий:
+            {% include('comment/_form.html.twig') %}
+        <div>
+        <div>
+            {% for comment in post.comments %}
+                Пользователь {{ comment.author.user.email }} оставил свой классный комментарий в {{ comment.createdAt|date('Y-m-d H:i:s') }}
+                Содержание комментария:
+                <p style="font-size: 20px;">
+                    {{ comment.content }}
+                </p>
+            {% else %}
+                Пока комментариев к посту нет...
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

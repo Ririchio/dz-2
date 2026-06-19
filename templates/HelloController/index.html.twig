@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %} Lucky Number {% endblock %}
+
+{% block body %}
+    <h1>Your lucky number is: {{ luckyNumber }}</h1>
+    <p>
+        {% if luckyNumber % 2 == 0 %}
+            Your lucky number is even
+        {% else %}
+            Your lucky number is odd
+        {% endif %}
+        <h2> Your Lucky Number is saved in DataBase </h2>
+    </p>
+{% endblock %}

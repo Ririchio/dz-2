@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello LoginController!{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        .form-elem {
+            margin: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div>
+        {% if error %}
+            <div>
+                {{ error.message }}
+                {# Небезопасный способо вывода ошибки #}
+            </div>
+        {% endif %}
+        <form method="post" action="{{ path('app_login') }}">
+            <div class="form-elem">
+                <label for="_username">Email:</label>
+                <input type="email" id="_username" name="_username" value="{{ last_username }}" required />
+            </div>
+            <div class="form-elem">
+                <label for="_password">Passowrd:</label>
+                <input type="password" id="_password" name="_password" required />
+            </div>
+            <div class="form-elem">
+                <input type="submit" value="Авторизоваться!" />
+            </div>
+        </form>
+    </div>
+{% endblock %}

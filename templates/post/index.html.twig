@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Мои посты{% endblock %}
+
+{% block body %}
+
+<div>
+    {% for post in posts %}
+        <div>
+            {{ post.title }}
+            <a href="{{ path('app_post_show', { 'id': post.id }) }}">Смотреть подробности</a>
+        </div>
+    {% else %}
+        <p>Нет постов</p>
+    {% endfor %}
+    <a href="{{ path('app_post_new')}}">Создать новый пост</a>
+<div>
+{% endblock %}
