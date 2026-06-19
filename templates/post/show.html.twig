@@ -6,37 +6,64 @@
 
 {% block body %}
     <div>
-        {{ post.title }}
+        <h1>{{ post.title }}</h1>
+        <p>{{ post.description }}</p>
     </div>
+
     <div>
-        {{ post.description }}
+        <a href="{{ path('app_post_edit', { id: post.id }) }}">Редактировать пост</a>
     </div>
+
     <div>
-        <a href="{{ path('app_post_edit', { 'id': post.id } ) }}">Редактировать пост</a>
-    </div>
-    <div>
-        <form action="{{ path('app_post_delete', { 'id': post.id } ) }}" method="post" onsubmit="return confirm('Вы уверены?');">
+        <form action="{{ path('app_post_delete', { id: post.id }) }}" method="post" onsubmit="return confirm('Вы уверены?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete-post' ~ post.id) }}">
             <button>Удалить пост</button>
         </form>
     </div>
+
     <div>
-        <a href="{{ path('app_post' )}}">Ко всем постам</a>
+        <a href="{{ path('app_post') }}">Ко всем постам</a>
     </div>
-        <div style="margin: 5px;">
-        <h1>Комментарии</h1>
+
+    <div style="margin: 5px;">
+        <h2>Комментарии</h2>
+
         <div>
-            Добавить коментарий:
+            Добавить комментарий:
             {% include('comment/_form.html.twig') %}
-        <div>
+        </div>
+
         <div>
             {% for comment in post.comments %}
-                Пользователь {{ comment.author.user.email }} оставил свой классный комментарий в {{ comment.createdAt|date('Y-m-d H:i:s') }}
-                Содержание комментария:
-                <p style="font-size: 20px;">
-                    {{ comment.content }}
-                </p>
+                <article style="border: 1px solid #ddd; margin: 10px 0; padding: 10px;">
+                    <p>
+                        Пользователь {{ comment.author.user.email }} оставил комментарий
+                        {{ comment.createdAt|date('Y-m-d H:i:s') }}
+                    </p>
+                    <p style="font-size: 20px;">{{ comment.content }}</p>
+                    <p>
+                        Положительные реакции: {{ comment.positiveVotes }} |
+                        Отрицательные реакции: {{ comment.negativeVotes }} |
+                        Всего: {{ comment.reactionsCount }}
+                    </p>
+
+                    <form action="{{ path('app_comment_positive', { post_id: post.id, id: comment.id }) }}" method="post" style="display: inline;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('positive' ~ comment.id) }}">
+                        <button>Понравилось</button>
+                    </form>
+
+                    <form action="{{ path('app_comment_negative', { post_id: post.id, id: comment.id }) }}" method="post" style="display: inline;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('negative' ~ comment.id) }}">
+                        <button>Не понравилось</button>
+                    </form>
+
+                    <form action="{{ path('app_comment_delete', { post_id: post.id, id: comment.id }) }}" method="post" style="display: inline;" onsubmit="return confirm('Удалить комментарий?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ comment.id) }}">
+                        <button>Удалить</button>
+                    </form>
+                </article>
             {% else %}
-                Пока комментариев к посту нет...
+                <p>Пока комментариев к посту нет...</p>
             {% endfor %}
         </div>
     </div>
