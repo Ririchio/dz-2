@@ -4,7 +4,90 @@
 
 {% block body %}
 <div>
-    <h1>Статистика</h1>
-    <p>Всего комментариев: {{ commentsCount }}</p>
+    <h1>Статистика проекта</h1>
+
+    <section>
+        <h2>Общие данные</h2>
+        <p>Всего комментариев: {{ commentsCount }}</p>
+
+        <p>
+            Пост с максимальным числом комментариев:
+            {% if maxCommentsPost %}
+                {{ maxCommentsPost.title }}
+            {% else %}
+                нет данных
+            {% endif %}
+        </p>
+
+        <p>
+            Пост с минимальным ненулевым числом комментариев:
+            {% if minCommentsPost %}
+                {{ minCommentsPost.title }}
+            {% else %}
+                нет данных
+            {% endif %}
+        </p>
+    </section>
+
+    <section>
+        <h2>Посты, у которых комментариев больше среднего</h2>
+        <ul>
+            {% for post in postsAboveAverage %}
+                <li>{{ post.title }}</li>
+            {% else %}
+                <li>Таких постов нет</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section>
+        <h2>Самый длинный комментарий</h2>
+        {% if longestComment %}
+            <p>{{ longestComment.content }}</p>
+            <small>Автор: {{ longestComment.author.user.email }}</small>
+        {% else %}
+            <p>Комментариев пока нет</p>
+        {% endif %}
+    </section>
+
+    <section>
+        <h2>Комментарии с самым большим количеством реакций</h2>
+        <ol>
+            {% for comment in topComments %}
+                <li>
+                    {{ comment.content }} — всего реакций: {{ comment.reactionsCount }}
+                    (положительных: {{ comment.positiveVotes }}, отрицательных: {{ comment.negativeVotes }})
+                </li>
+            {% else %}
+                <li>Комментариев пока нет</li>
+            {% endfor %}
+        </ol>
+    </section>
+
+    <section>
+        <h2>Топ профилей по комментариям под их постами</h2>
+        <ol>
+            {% for profile in topProfiles %}
+                <li>
+                    {{ profile.email|default('email не указан') }} — комментариев под постами: {{ profile.commentsCount }}
+                </li>
+            {% else %}
+                <li>Нет профилей</li>
+            {% endfor %}
+        </ol>
+    </section>
+
+    <section>
+        <h2>Профили с постами, но без собственных комментариев</h2>
+        <ul>
+            {% for profile in quietAuthors %}
+                <li>
+                    {{ profile.email|default('email не указан') }} — постов: {{ profile.postsCount }}
+                </li>
+            {% else %}
+                <li>Таких профилей нет</li>
+            {% endfor %}
+        </ul>
+    </section>
 </div>
 {% endblock %}
