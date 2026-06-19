@@ -28,6 +28,12 @@ class Comment
     #[ORM\JoinColumn(nullable: false)]
     private ?Post $post = null;
 
+    #[ORM\Column(options: ['default' => 0])]
+    private int $positiveVotes = 0;
+
+    #[ORM\Column(options: ['default' => 0])]
+    private int $negativeVotes = 0;
+
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
@@ -46,7 +52,6 @@ class Comment
     public function setAuthor(?Profile $author): static
     {
         $this->author = $author;
-
         return $this;
     }
 
@@ -58,7 +63,6 @@ class Comment
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
-
         return $this;
     }
 
@@ -70,7 +74,6 @@ class Comment
     public function setContent(string $content): static
     {
         $this->content = $content;
-
         return $this;
     }
 
@@ -82,7 +85,45 @@ class Comment
     public function setPost(?Post $post): static
     {
         $this->post = $post;
-
         return $this;
+    }
+
+    public function getPositiveVotes(): int
+    {
+        return $this->positiveVotes;
+    }
+
+    public function setPositiveVotes(int $positiveVotes): static
+    {
+        $this->positiveVotes = max(0, $positiveVotes);
+        return $this;
+    }
+
+    public function addPositiveVote(): static
+    {
+        ++$this->positiveVotes;
+        return $this;
+    }
+
+    public function getNegativeVotes(): int
+    {
+        return $this->negativeVotes;
+    }
+
+    public function setNegativeVotes(int $negativeVotes): static
+    {
+        $this->negativeVotes = max(0, $negativeVotes);
+        return $this;
+    }
+
+    public function addNegativeVote(): static
+    {
+        ++$this->negativeVotes;
+        return $this;
+    }
+
+    public function getReactionsCount(): int
+    {
+        return $this->positiveVotes + $this->negativeVotes;
     }
 }
