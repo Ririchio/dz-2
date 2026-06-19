@@ -19,12 +19,12 @@ class PostRepository extends ServiceEntityRepository
 
     public function getPostsByProfile(Profile $profile): array
     {
-        $qb = $this->createQueryBuilder('p');
-        $qb->andWhere('p.profile = :profile');
-        $qb->setParameter('profile', $profile);
-
-        $query = $qb->getQuery();
-        return $query->getArrayResult();
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.profile = :profile')
+            ->setParameter('profile', $profile)
+            ->orderBy('p.id', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 
     public function savePost(Post $post): void
@@ -41,58 +41,57 @@ class PostRepository extends ServiceEntityRepository
         $em->flush();
     }
 
-    public function getPostWithMaxComments()
+    public function getPostWithMaxComments(): ?Post
     {
-        $qb = $this->createQueryBuilder('p'); // Создаем строителя запросов
-        $qb->select('p'); // Выполняем выборку поста с псевдонимом 'p'
-        $qb->addSelect('COUNT(c.id) AS HIDDEN cnt'); // Добавляем еще одну "скрытую выборку"
-        $qb->leftJoin('p.comments', 'c', 'p.id = c.post_id'); // Делаем LEFT JOIN с таблицей comments
-        $qb->groupBy('p.id'); // Группируем по айди поста
-        $qb->orderBy('cnt', 'DESC'); // Сортируем результат по скрытой выборке по убыванию
-        $qb->setMaxResults(1); // Устанавлием один результат выборки
-        return $qb->getQuery()->getOneOrNullResult(); // Получаем и выполняем запрос, возвращаем один результат или null
+        return $this->createQueryBuilder('p')
+            ->addSelect('COUNT(c.id) AS HIDDEN commentsCount')
+            ->leftJoin('p.comments', 'c')
+            ->groupBy('p.id')
+            ->orderBy('commentsCount', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
-
-    /**
-     * Возвращается пост с минимальным (но не нулевым) количеством комментариев
-     */
-    public function getPostWithMinComments()
+    public function getPostWithMinComments(): ?Post
     {
-        // TODO: Реализовать метод
+        return $this->createQueryBuilder('p')
+            ->addSelect('COUNT(c.id) AS HIDDEN commentsCount')
+            ->innerJoin('p.comments', 'c')
+            ->groupBy('p.id')
+            ->having('COUNT(c.id) > 0')
+            ->orderBy('commentsCount', 'ASC')
+            ->addOrderBy('p.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
-    /**
-     * Возвращает список постов, у которых комментариев больше среднего
-     * ПОДСКАЗКА: Среднее количество комментариев можно выполнить отдельным запросом или подзапросом
-     */
-    public function getPostsWithCommentsGreaterThanAverage()
+    public function getPostsWithCommentsGreaterThanAverage(): array
     {
-        // TODO: Реализовать метод
+        $commentCounters = $this->createQueryBuilder('p')
+            ->select('COUNT(c.id) AS commentsCount')
+            ->leftJoin('p.comments', 'c')
+            ->groupBy('p.id')
+            ->getQuery()
+            ->getScalarResult();
+
+        if ($commentCounters === []) {
+            return [];
+        }
+
+        $totalComments = array_sum(array_map(static fn (array $row): int => (int) $row['commentsCount'], $commentCounters));
+        $averageComments = $totalComments / count($commentCounters);
+
+        return $this->createQueryBuilder('p')
+            ->addSelect('COUNT(c.id) AS HIDDEN commentsCount')
+            ->leftJoin('p.comments', 'c')
+            ->groupBy('p.id')
+            ->having('COUNT(c.id) > :averageComments')
+            ->setParameter('averageComments', $averageComments)
+            ->orderBy('commentsCount', 'DESC')
+            ->addOrderBy('p.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
-
-    //    /**
-    //     * @return Post[] Returns an array of Post objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Post
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }
