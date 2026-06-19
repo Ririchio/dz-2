@@ -3,21 +3,21 @@
 namespace App\Controller;
 
 use App\Entity\Comment;
-use App\Entity\User;
 use App\Entity\Post;
+use App\Entity\User;
 use App\Form\CommentType;
-use App\Repository\CommentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_USER')]
 #[Route('/post/{post_id:post.id}/comment')]
-// TODO: Убрать не нужные методы и твиг шаблоны
 final class CommentController extends AbstractController
 {
-    #[Route('/new', name: 'app_comment_new', methods: ['GET', 'POST'])]
+    #[Route('/new', name: 'app_comment_new', methods: ['POST'])]
     public function new(Post $post, Request $request, EntityManagerInterface $entityManager): Response
     {
         $comment = new Comment();
@@ -25,57 +25,64 @@ final class CommentController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var User $user */
             $user = $this->getUser();
+            if (!$user instanceof User || $user->getProfile() === null) {
+                throw $this->createAccessDeniedException();
+            }
+
             $comment->setAuthor($user->getProfile());
             $comment->setPost($post);
 
             $entityManager->persist($comment);
             $entityManager->flush();
-
-            return $this->redirectToRoute('app_post_show', ['id' => $post->getId()], Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render('comment/new.html.twig', [
-            'comment' => $comment,
-            'form' => $form,
-        ]);
+        return $this->redirectToRoute('app_post_show', ['id' => $post->getId()], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/{id}', name: 'app_comment_show', methods: ['GET'])]
-    public function show(Comment $comment): Response
+    #[Route('/{id}/positive', name: 'app_comment_positive', methods: ['POST'])]
+    public function positive(Post $post, Comment $comment, Request $request, EntityManagerInterface $entityManager): Response
     {
-        return $this->render('comment/show.html.twig', [
-            'comment' => $comment,
-        ]);
-    }
+        $this->checkPost($post, $comment);
 
-    #[Route('/{id}/edit', name: 'app_comment_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Comment $comment, EntityManagerInterface $entityManager): Response
-    {
-        $form = $this->createForm(CommentType::class, $comment);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($this->isCsrfTokenValid('positive'.$comment->getId(), $request->getPayload()->getString('_token'))) {
+            $comment->addPositiveVote();
             $entityManager->flush();
-
-            return $this->redirectToRoute('app_comment_index', [], Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render('comment/edit.html.twig', [
-            'comment' => $comment,
-            'form' => $form,
-        ]);
+        return $this->redirectToRoute('app_post_show', ['id' => $post->getId()], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/{id}', name: 'app_comment_delete', methods: ['POST'])]
-    public function delete(Request $request, Comment $comment, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}/negative', name: 'app_comment_negative', methods: ['POST'])]
+    public function negative(Post $post, Comment $comment, Request $request, EntityManagerInterface $entityManager): Response
     {
+        $this->checkPost($post, $comment);
+
+        if ($this->isCsrfTokenValid('negative'.$comment->getId(), $request->getPayload()->getString('_token'))) {
+            $comment->addNegativeVote();
+            $entityManager->flush();
+        }
+
+        return $this->redirectToRoute('app_post_show', ['id' => $post->getId()], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/{id}/delete', name: 'app_comment_delete', methods: ['POST'])]
+    public function delete(Post $post, Comment $comment, Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $this->checkPost($post, $comment);
+
         if ($this->isCsrfTokenValid('delete'.$comment->getId(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($comment);
             $entityManager->flush();
         }
 
-        return $this->redirectToRoute('app_comment_index', [], Response::HTTP_SEE_OTHER);
+        return $this->redirectToRoute('app_post_show', ['id' => $post->getId()], Response::HTTP_SEE_OTHER);
+    }
+
+    private function checkPost(Post $post, Comment $comment): void
+    {
+        if ($comment->getPost()?->getId() !== $post->getId()) {
+            throw $this->createNotFoundException();
+        }
     }
 }
