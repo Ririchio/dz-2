@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,8 +16,9 @@ final class RegistrationController extends AbstractController
 {
     public function __construct(
         private UserPasswordHasherInterface $hasher,
-        private UserRepository $userRepository
-    ){
+        private UserRepository $userRepository,
+        private RoleRepository $roleRepository,
+    ) {
     }
 
     #[Route('/registration', name: 'app_registration')]
@@ -32,6 +34,11 @@ final class RegistrationController extends AbstractController
 
             $user = new User();
             $user->setEmail($email);
+
+            $defaultRole = $this->roleRepository->findOneBy(['name' => 'ROLE_USER']);
+            if ($defaultRole !== null) {
+                $user->addRole($defaultRole);
+            }
 
             $hashedPassword = $this->hasher->hashPassword($user, $plainPassword);
             $this->userRepository->upgradePassword($user, $hashedPassword);
