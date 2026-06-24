@@ -2,13 +2,11 @@
 
 namespace App\Repository;
 
+use App\Entity\Comment;
 use App\Entity\Profile;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Profile>
- */
 class ProfileRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,44 +14,35 @@ class ProfileRepository extends ServiceEntityRepository
         parent::__construct($registry, Profile::class);
     }
 
-    /**
-     * Получить топ-5 профилей, чьи посты имеют максимальное суммарное количество комментариев
-     */
-    public function getTopProfilesWithTotalCommentInTheirPosts(int $topMax = 5)
+    public function getTopProfilesWithTotalCommentInTheirPosts(int $topMax = 5): array
     {
-        // TODO: Реализовтать метод
+        return $this->createQueryBuilder('p')
+            ->addSelect('user')
+            ->addSelect('COUNT(c.id) AS HIDDEN commentsCount')
+            ->innerJoin('p.user', 'user')
+            ->leftJoin('p.posts', 'post')
+            ->leftJoin('post.comments', 'c')
+            ->groupBy('p.id')
+            ->addGroupBy('user.id')
+            ->orderBy('commentsCount', 'DESC')
+            ->addOrderBy('p.id', 'ASC')
+            ->setMaxResults($topMax)
+            ->getQuery()
+            ->getResult();
     }
 
-    /** 
-     * Получить профили, которые не оставили ни одного комментария, но имют хотя бы один пост
-     */
-    public function getProfilesWithPostsAndWithoudComments()
+    public function getProfilesWithPostsAndWithoutComments(): array
     {
-        // TODO: Реализовать метод
+        return $this->createQueryBuilder('p')
+            ->addSelect('user')
+            ->innerJoin('p.user', 'user')
+            ->innerJoin('p.posts', 'post')
+            ->leftJoin(Comment::class, 'c', 'WITH', 'c.author = p')
+            ->groupBy('p.id')
+            ->addGroupBy('user.id')
+            ->having('COUNT(c.id) = 0')
+            ->orderBy('p.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
-
-    //    /**
-    //     * @return Profile[] Returns an array of Profile objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Profile
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }

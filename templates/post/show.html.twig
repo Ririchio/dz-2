@@ -1,43 +1,58 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}
-    Пост
-{% endblock %}
+{% block title %}{{ post.title }}{% endblock %}
 
 {% block body %}
-    <div>
-        {{ post.title }}
-    </div>
-    <div>
-        {{ post.description }}
-    </div>
-    <div>
-        <a href="{{ path('app_post_edit', { 'id': post.id } ) }}">Редактировать пост</a>
-    </div>
-    <div>
-        <form action="{{ path('app_post_delete', { 'id': post.id } ) }}" method="post" onsubmit="return confirm('Вы уверены?');">
-            <button>Удалить пост</button>
-        </form>
-    </div>
-    <div>
-        <a href="{{ path('app_post' )}}">Ко всем постам</a>
-    </div>
-        <div style="margin: 5px;">
-        <h1>Комментарии</h1>
-        <div>
-            Добавить коментарий:
-            {% include('comment/_form.html.twig') %}
-        <div>
-        <div>
-            {% for comment in post.comments %}
-                Пользователь {{ comment.author.user.email }} оставил свой классный комментарий в {{ comment.createdAt|date('Y-m-d H:i:s') }}
-                Содержание комментария:
-                <p style="font-size: 20px;">
-                    {{ comment.content }}
-                </p>
-            {% else %}
-                Пока комментариев к посту нет...
-            {% endfor %}
+    <article class="card">
+        <p class="muted" style="margin-top: 0">{{ post.profile.user.email }} · пост №{{ post.id }}</p>
+        <h1>{{ post.title }}</h1>
+        <p style="white-space: pre-wrap">{{ post.description }}</p>
+
+        <div class="actions">
+            <a class="button button-secondary" href="{{ path('app_post') }}">Назад к постам</a>
+            {% if canManage %}
+                <a class="button" href="{{ path('app_post_edit', {id: post.id}) }}">Редактировать</a>
+                <form action="{{ path('app_post_delete', {id: post.id}) }}" method="post" onsubmit="return confirm('Удалить этот пост?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
+                    <button class="button-danger">Удалить</button>
+                </form>
+            {% endif %}
         </div>
-    </div>
+    </article>
+
+    <section class="section">
+        {% if canInteract %}
+            <div class="card">
+                <h2>Добавить комментарий</h2>
+                {{ include('comment/_form.html.twig', {button_label: 'Опубликовать'}) }}
+            </div>
+        {% else %}
+            <div class="card empty-state">
+                <a href="{{ path('app_profile_new') }}">Создайте профиль</a>, чтобы комментировать и ставить реакции.
+            </div>
+        {% endif %}
+
+        <h2 style="margin-top: 32px">Комментарии <span class="muted">({{ post.comments|length }})</span></h2>
+
+        {% for comment in post.comments %}
+            {% set currentReaction = userReactions[comment.id]|default(null) %}
+            <article class="card comment">
+                <p class="comment-meta">{{ comment.author.user.email }} · {{ comment.createdAt|date('d.m.Y H:i') }}</p>
+                <p class="comment-content">{{ comment.content }}</p>
+
+                {% if canInteract %}<div class="reactions">
+                    <form action="{{ path('app_comment_like', {post_id: post.id, comment_id: comment.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('like' ~ comment.id) }}">
+                        <button class="reaction-button{{ currentReaction == 'like' ? ' active' : '' }}">Нравится · {{ comment.likes }}</button>
+                    </form>
+                    <form action="{{ path('app_comment_dislike', {post_id: post.id, comment_id: comment.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('dislike' ~ comment.id) }}">
+                        <button class="reaction-button{{ currentReaction == 'dislike' ? ' active' : '' }}">Не нравится · {{ comment.dislikes }}</button>
+                    </form>
+                </div>{% endif %}
+            </article>
+        {% else %}
+            <div class="card empty-state">Комментариев пока нет.</div>
+        {% endfor %}
+    </section>
 {% endblock %}

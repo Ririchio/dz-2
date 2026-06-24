@@ -1,11 +1,64 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello StatisticsController!{% endblock %}
+{% block title %}Статистика{% endblock %}
 
 {% block body %}
-<div>
-    TODO: Добавить отображение полученных данных из репозиториев
-    Всего комментариев: {{ commentsCount }} <br>
-    Пост с максимальным числом комментариев {{ maxCommentsPost.title }}
-</div>
+    <h1>Статистика</h1>
+
+    <div class="stats-grid">
+        <section class="card">
+            <span class="muted">Всего комментариев</span>
+            <p class="stat-value">{{ commentCount }}</p>
+        </section>
+        <section class="card">
+            <span class="muted">Больше всего комментариев</span>
+            <p class="stat-value">{{ postWithMaxComments ? postWithMaxComments.title : 'Нет данных' }}</p>
+        </section>
+        <section class="card">
+            <span class="muted">Меньше всего, но не ноль</span>
+            <p class="stat-value">{{ postWithMinComments ? postWithMinComments.title : 'Нет данных' }}</p>
+        </section>
+        <section class="card">
+            <span class="muted">Самый длинный комментарий</span>
+            <p class="stat-value">{{ maxContentComment ? maxContentComment.content : 'Нет данных' }}</p>
+        </section>
+        <section class="card">
+            <span class="muted">Среднее комментариев на пост</span>
+            <p class="stat-value">{{ avgCommentsPerPost|number_format(2, ',', ' ') }}</p>
+        </section>
+    </div>
+
+    <div class="stats-grid section">
+        <section class="card">
+            <h2>Посты выше среднего</h2>
+            <ul class="clean-list">
+                {% for post in postsAboveAverage %}<li>{{ post.title }}</li>{% else %}<li>Нет данных</li>{% endfor %}
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Топ комментариев</h2>
+            <ul class="clean-list">
+                {% for comment in topComments %}
+                    <li>{{ comment.content }} — {{ comment.likes }} нравится, {{ comment.dislikes }} не нравится</li>
+                {% else %}
+                    <li>Нет данных</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Топ профилей</h2>
+            <ul class="clean-list">
+                {% for profile in topProfiles %}<li>{{ profile.user.email }}</li>{% else %}<li>Нет данных</li>{% endfor %}
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Не оставляли комментарии</h2>
+            <ul class="clean-list">
+                {% for profile in profilesWithoutComments %}<li>{{ profile.user.email }}</li>{% else %}<li>Нет данных</li>{% endfor %}
+            </ul>
+        </section>
+    </div>
 {% endblock %}

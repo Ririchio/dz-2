@@ -1,18 +1,35 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Мои посты{% endblock %}
+{% block title %}{{ mine ? 'Мои посты' : 'Лента' }}{% endblock %}
 
 {% block body %}
-
-<div>
-    {% for post in posts %}
+    <div class="actions" style="justify-content: space-between; margin: 0 0 24px">
         <div>
-            {{ post.title }}
-            <a href="{{ path('app_post_show', { 'id': post.id }) }}">Смотреть подробности</a>
+            <h1 style="margin: 0">{{ mine ? 'Мои посты' : 'Лента постов' }}</h1>
+            {% if not mine %}<p class="muted" style="margin-bottom: 0">Публикации всех пользователей</p>{% endif %}
         </div>
-    {% else %}
-        <p>Нет постов</p>
-    {% endfor %}
-    <a href="{{ path('app_post_new')}}">Создать новый пост</a>
-<div>
+        <div class="actions" style="margin: 0">
+            <a class="button button-secondary" href="{{ path(mine ? 'app_post' : 'app_post_mine') }}">
+                {{ mine ? 'Общая лента' : 'Мои посты' }}
+            </a>
+            <a class="button" href="{{ path('app_post_new') }}">Создать пост</a>
+        </div>
+    </div>
+
+    <div class="post-list">
+        {% for post in posts %}
+            <article class="card post-list-item">
+                <div class="post-preview">
+                    <p class="muted post-meta">{{ post.profile.user.email }} · {{ post.comments|length }} комментариев</p>
+                    <h2>{{ post.title }}</h2>
+                    <p>{{ post.description|slice(0, 180) }}{{ post.description|length > 180 ? '…' : '' }}</p>
+                </div>
+                <a class="button button-secondary" href="{{ path('app_post_show', {id: post.id}) }}">Открыть</a>
+            </article>
+        {% else %}
+            <div class="card empty-state">
+                {{ mine ? 'У вас пока нет постов.' : 'В ленте пока нет постов.' }}
+            </div>
+        {% endfor %}
+    </div>
 {% endblock %}

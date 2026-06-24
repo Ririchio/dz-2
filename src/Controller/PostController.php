@@ -4,10 +4,11 @@ namespace App\Controller;
 
 use App\Entity\Comment;
 use App\Entity\Post;
-use App\Repository\PostRepository;
 use App\Entity\User;
 use App\Form\CommentType;
 use App\Form\PostType;
+use App\Repository\CommentReactionRepository;
+use App\Repository\PostRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,15 +22,24 @@ final class PostController extends AbstractController
     {
     }
 
-    #[Route('/post', name: 'app_post')]
+    #[Route('/post', name: 'app_post', methods: [Request::METHOD_GET])]
     public function index(): Response
     {
-        /** @var User */
-        $user = $this->getUser();
-        $profile = $user->getProfile();
-        $allPosts = $this->postRepository->getPostsByProfile($profile);
         return $this->render('post/index.html.twig', [
-            'posts' => $allPosts,
+            'posts' => $this->postRepository->getFeed(),
+            'mine' => false,
+        ]);
+    }
+
+    #[Route('/post/mine', name: 'app_post_mine', methods: [Request::METHOD_GET])]
+    public function mine(): Response
+    {
+        $user = $this->getCurrentUser();
+        $profile = $user->getProfile();
+
+        return $this->render('post/index.html.twig', [
+            'posts' => $profile === null ? [] : $this->postRepository->getPostsByProfile($profile),
+            'mine' => true,
         ]);
     }
 
@@ -40,38 +50,60 @@ final class PostController extends AbstractController
         $form = $this->createForm(PostType::class, $post);
 
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid())
-        {
-            /** @var User */
-            $user = $this->getUser();
+        if ($form->isSubmitted() && $form->isValid()) {
+            $user = $this->getCurrentUser();
             $profile = $user->getProfile();
+            if ($profile === null) {
+                $this->addFlash('error', 'Сначала создайте профиль.');
+
+                return $this->redirectToRoute('app_profile');
+            }
             $post->setProfile($profile);
 
             $this->postRepository->savePost($post);
+
             return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
         }
 
         return $this->render('post/new.html.twig', ['form' => $form]);
     }
 
-    #[Route('/post/{id}/show', name: 'app_post_show', methods: [Request::METHOD_GET, ])]
-    public function showPost(Post $post): Response
+    #[Route('/post/{id}/show', name: 'app_post_show', methods: [Request::METHOD_GET])]
+    public function showPost(Post $post, CommentReactionRepository $reactionRepository): Response
     {
         $comment = new Comment();
-        $commentForm = $this->createForm(CommentType::class, $comment, ['action' => $this->generateUrl('app_comment_new', ['post_id' => $post->getId()])] );
+        $commentForm = $this->createForm(CommentType::class, $comment, [
+            'action' => $this->generateUrl('app_comment_new', ['post_id' => $post->getId()]),
+        ]);
 
-        return $this->render('post/show.html.twig', ['post' => $post, 'form' => $commentForm]);
+        $user = $this->getCurrentUser();
+        $profile = $user->getProfile();
+        $userReactions = $profile === null
+            ? []
+            : $reactionRepository->getTypesForPostAndProfile($post, $profile);
+
+        return $this->render('post/show.html.twig', [
+            'post' => $post,
+            'form' => $commentForm,
+            'userReactions' => $userReactions,
+            'canInteract' => $profile !== null,
+            'canManage' => $this->canManagePost($post),
+        ]);
     }
 
     #[Route('/post/{id}/edit', name: 'app_post_edit', methods: [Request::METHOD_GET, Request::METHOD_POST])]
     public function editPost(Post $post, Request $request): Response
     {
+        if (!$this->canManagePost($post)) {
+            throw $this->createAccessDeniedException('Редактировать этот пост может только его автор или администратор.');
+        }
+
         $form = $this->createForm(PostType::class, $post);
 
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) 
-        {
+        if ($form->isSubmitted() && $form->isValid()) {
             $this->postRepository->savePost($post);
+
             return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
         }
 
@@ -79,9 +111,34 @@ final class PostController extends AbstractController
     }
 
     #[Route('/post/{id}/delete', name: 'app_post_delete', methods: [Request::METHOD_POST])]
-    public function deletePost(Post $post): Response
+    public function deletePost(Post $post, Request $request): Response
     {
-        $this->postRepository->deletePost($post);
+        if (!$this->canManagePost($post)) {
+            throw $this->createAccessDeniedException('Удалить этот пост может только его автор или администратор.');
+        }
+
+        if ($this->isCsrfTokenValid('delete'.$post->getId(), $request->getPayload()->getString('_token'))) {
+            $this->postRepository->deletePost($post);
+        }
+
         return $this->redirectToRoute('app_post');
+    }
+
+    private function canManagePost(Post $post): bool
+    {
+        $user = $this->getCurrentUser();
+
+        return $this->isGranted('ROLE_ADMIN')
+            || $post->getProfile()?->getUser()?->getId() === $user->getId();
+    }
+
+    private function getCurrentUser(): User
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return $user;
     }
 }

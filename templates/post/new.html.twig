@@ -1,9 +1,8 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}
-    Создание поста
-{% endblock %}
+{% block title %}Новый пост{% endblock %}
 
 {% block body %}
-    {{ include('post/_form.html.twig') }}
+    <h1>Новый пост</h1>
+    {{ include('post/_form.html.twig', {button_label: 'Создать пост'}) }}
 {% endblock %}

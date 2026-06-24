@@ -1,7 +1,9 @@
-<div>
-        {{ form_start(form) }}
-        {{ form_row(form.title) }}
-        {{ form_row(form.description) }}
-        <button>Сохранить</button>
-        {{ form_end(form) }}
+<div class="card form-card">
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <div class="actions">
+            <button>{{ button_label|default('Сохранить') }}</button>
+            <a class="button button-secondary" href="{{ path('app_post') }}">Отмена</a>
+        </div>
+    {{ form_end(form) }}
 </div>

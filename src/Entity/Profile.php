@@ -23,9 +23,6 @@ class Profile
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
-    /**
-     * @var Collection<int, Post>
-     */
     #[ORM\OneToMany(targetEntity: Post::class, mappedBy: 'profile')]
     private Collection $posts;
 
@@ -63,9 +60,6 @@ class Profile
         return $this;
     }
 
-    /**
-     * @return Collection<int, Post>
-     */
     public function getPosts(): Collection
     {
         return $this->posts;
@@ -84,7 +78,6 @@ class Profile
     public function removePost(Post $post): static
     {
         if ($this->posts->removeElement($post)) {
-            // set the owning side to null (unless already changed)
             if ($post->getProfile() === $this) {
                 $post->setProfile(null);
             }

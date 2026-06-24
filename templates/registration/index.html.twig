@@ -1,30 +1,23 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Registration{% endblock %}
-
-{% block stylesheets %}
-    <style>
-        .form-elem {
-            margin: 5px;
-        }
-    </style>
-{% endblock %}
+{% block title %}Регистрация{% endblock %}
 
 {% block body %}
+    <section class="card auth-card">
+        <h1>Регистрация</h1>
 
-<div>
-    <form method="post" action="{{ path('app_registration') }}">
-        <div class="form-elem">
-            <label for="_email">Введите адрес электронной почты:</label>
-            <input id="_email" name="_email" type="email" required />
-        </div>
-        <div class="form-elem">
-            <label for="_password">Введите пароль:</label>
-            <input id="_password" name="_password" type="password" required />
-        </div>
-        <div class="form-elem">
-            <input type="submit" value="Зарегистрироваться!"/>
-        </div>
-    </form>
-</div>
+        <form method="post" action="{{ path('app_registration') }}">
+            <div>
+                <label for="_email">Email</label>
+                <input id="_email" name="_email" type="email" required autofocus>
+            </div>
+            <div>
+                <label for="_password">Пароль</label>
+                <input id="_password" name="_password" type="password" required minlength="6">
+            </div>
+            <button style="width: 100%">Зарегистрироваться</button>
+        </form>
+
+        <p class="auth-footer">Уже есть аккаунт? <a href="{{ path('app_login') }}">Войти</a></p>
+    </section>
 {% endblock %}

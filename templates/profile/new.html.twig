@@ -1,9 +1,8 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}
-    Создание профиля
-{% endblock %}
+{% block title %}Создание профиля{% endblock %}
 
 {% block body %}
-    {{ include('profile/_form.html.twig') }}
+    <h1>Создание профиля</h1>
+    {{ include('profile/_form.html.twig', {button_label: 'Создать профиль'}) }}
 {% endblock %}

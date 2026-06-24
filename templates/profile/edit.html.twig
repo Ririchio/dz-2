@@ -1,9 +1,8 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}
-    Редактирование профиля
-{% endblock %}
+{% block title %}Редактирование профиля{% endblock %}
 
 {% block body %}
-    {{ include('profile/_form.html.twig') }}
+    <h1>Редактирование профиля</h1>
+    {{ include('profile/_form.html.twig', {button_label: 'Сохранить изменения'}) }}
 {% endblock %}

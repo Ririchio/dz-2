@@ -3,12 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\Comment;
+use App\Entity\Post;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Comment>
- */
 class CommentRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,46 +14,40 @@ class CommentRepository extends ServiceEntityRepository
         parent::__construct($registry, Comment::class);
     }
 
-    /**
-     * Возвращает комментарий с максимальным содержимым (content)
-     */
-    public function getCommentWithMaxContent()
+    public function getCommentWithMaxContent(): ?Comment
     {
-        // TODO: Реализовать запрос
+        return $this->createQueryBuilder('c')
+            ->orderBy('LENGTH(c.content)', 'DESC')
+            ->addOrderBy('c.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
-
-    /**
-     * Возвращает топ-5 комментариев с максиамальным суммарным количеством лайков и дизлайков
-     * ПОДСКАЗКА: нужно добавить в сущность комментария поля с лайками и дизлайками, не забудьте добавить возможность в UI лайкать и дизлайкать комменты
-     */
-    public function getCommentsWithMaxLikesAndDislikes(int $maxTop = 5)
+    public function getCommentsWithMaxLikesAndDislikes(int $maxTop = 5): array
     {
-        // TODO: Реализовать запрос
+        return $this->createQueryBuilder('c')
+            ->addSelect('(c.likes + c.dislikes) AS HIDDEN reactionsCount')
+            ->orderBy('reactionsCount', 'DESC')
+            ->addOrderBy('c.id', 'ASC')
+            ->setMaxResults($maxTop)
+            ->getQuery()
+            ->getResult();
     }
 
-    //    /**
-    //     * @return Comment[] Returns an array of Comment objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('c.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function getAverageCommentsPerPost(): float
+    {
+        $result = $this->getEntityManager()->createQueryBuilder()
+            ->select('COUNT(comment.id) AS commentsCount, COUNT(DISTINCT post.id) AS postsCount')
+            ->from(Post::class, 'post')
+            ->leftJoin('post.comments', 'comment')
+            ->getQuery()
+            ->getSingleResult();
 
-    //    public function findOneBySomeField($value): ?Comment
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if ((int) $result['postsCount'] === 0) {
+            return 0.0;
+        }
+
+        return (int) $result['commentsCount'] / (int) $result['postsCount'];
+    }
 }

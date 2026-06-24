@@ -1,11 +1,9 @@
-<div>
-        {{ form_start(form) }}
-            <div style="margin: 5px;">
-                {{ form_label(form.bio) }} 
-                {{ form_widget(form.bio) }}
-            </div>
-            <div style="margin: 5px;">
-                <button>Сохранить!</button>
-            </div>
-        {{ form_end(form) }}
+<div class="card form-card">
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <div class="actions">
+            <button>{{ button_label|default('Сохранить') }}</button>
+            <a class="button button-secondary" href="{{ path('app_profile') }}">Отмена</a>
+        </div>
+    {{ form_end(form) }}
 </div>

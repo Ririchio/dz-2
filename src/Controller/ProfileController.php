@@ -22,10 +22,10 @@ final class ProfileController extends AbstractController
     #[Route('/profile', name: 'app_profile')]
     public function index(): Response
     {
-        $user = $this->getUser();
+        $user = $this->getCurrentUser();
+
         return $this->render('profile/index.html.twig', [
-            'controller_name' => 'ProfileController',
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -37,7 +37,7 @@ final class ProfileController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $profile->setUser($this->getUser());
+            $profile->setUser($this->getCurrentUser());
             $this->entityManager->persist($profile);
             $this->entityManager->flush();
 
@@ -47,11 +47,10 @@ final class ProfileController extends AbstractController
         return $this->render('profile/new.html.twig', ['form' => $form]);
     }
 
-    #[Route('profile/edit', name: 'app_profile_edit', methods: [ Request::METHOD_POST, Request::METHOD_GET ])]
+    #[Route('/profile/edit', name: 'app_profile_edit', methods: [Request::METHOD_GET, Request::METHOD_POST])]
     public function edit(Request $request): Response
     {
-        /** @var User */
-        $user = $this->getUser();
+        $user = $this->getCurrentUser();
         $profile = $user->getProfile();
 
         $form = $this->createForm(ProfileType::class, $profile);
@@ -66,16 +65,27 @@ final class ProfileController extends AbstractController
         return $this->render('profile/edit.html.twig', ['form' => $form]);
     }
 
-    #[Route('profile/delete', name: 'app_profile_delete', methods: [Request::METHOD_POST])]
-    public function deleteProfile(): Response
+    #[Route('/profile/delete', name: 'app_profile_delete', methods: [Request::METHOD_POST])]
+    public function deleteProfile(Request $request): Response
     {
-        /** @var User */
-        $user = $this->getUser();
+        $user = $this->getCurrentUser();
         $profile = $user->getProfile();
 
-        $this->entityManager->remove($profile);
-        $this->entityManager->flush();
+        if ($profile !== null && $this->isCsrfTokenValid('delete-profile', $request->getPayload()->getString('_token'))) {
+            $this->entityManager->remove($profile);
+            $this->entityManager->flush();
+        }
 
         return $this->redirectToRoute('app_profile');
+    }
+
+    private function getCurrentUser(): User
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return $user;
     }
 }

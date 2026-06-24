@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Post;
 use App\Repository\CommentRepository;
 use App\Repository\PostRepository;
 use App\Repository\ProfileRepository;
@@ -14,24 +13,24 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 final class StatisticsController extends AbstractController
 {
-    #[Route('/admin/statistics', name: 'app_statistics')]
-    public function index(PostRepository $postRepository): Response
-    {
-        /** 
-         * @var array<Post> $allPosts 
-         * TODO: Решить проблему N + 1
-        */
-        $allPosts = $postRepository->findAll();
-        $commentsCount = 0;
-        foreach ($allPosts as $post) {
-            $commentsCount += $post->getComments()->count();
-        }
-
-        $maxCommentsPost = $postRepository->getPostWithMaxComments();
+    #[Route('/admin/statistics', name: 'app_statistics', methods: ['GET'])]
+    public function index(
+        CommentRepository $commentRepository,
+        PostRepository $postRepository,
+        ProfileRepository $profileRepository
+    ): Response {
+        $averageCommentsPerPost = $commentRepository->getAverageCommentsPerPost();
 
         return $this->render('statistics/index.html.twig', [
-            'commentsCount' => $commentsCount,
-            'maxCommentsPost' => $maxCommentsPost
+            'commentCount' => $commentRepository->count([]),
+            'maxContentComment' => $commentRepository->getCommentWithMaxContent(),
+            'topComments' => $commentRepository->getCommentsWithMaxLikesAndDislikes(),
+            'postWithMaxComments' => $postRepository->getPostWithMaxComments(),
+            'postWithMinComments' => $postRepository->getPostWithMinComments(),
+            'postsAboveAverage' => $postRepository->getPostsWithCommentsGreaterThanAverage($averageCommentsPerPost),
+            'avgCommentsPerPost' => $averageCommentsPerPost,
+            'topProfiles' => $profileRepository->getTopProfilesWithTotalCommentInTheirPosts(5),
+            'profilesWithoutComments' => $profileRepository->getProfilesWithPostsAndWithoutComments(),
         ]);
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -20,20 +22,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180)]
     private ?string $email = null;
 
-    /**
-     * @var list<string> The user roles
-     */
-    #[ORM\Column]
-    private array $roles = [];
+    #[ORM\ManyToMany(targetEntity: Role::class)]
+    #[ORM\JoinTable(name: 'user_role')]
+    private Collection $roleEntities;
 
-    /**
-     * @var string The hashed password
-     */
     #[ORM\Column]
     private ?string $password = null;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?Profile $profile = null;
+
+    public function __construct()
+    {
+        $this->roleEntities = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -47,48 +49,46 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setEmail(string $email): static
     {
-        $this->email = $email;
+        $this->email = mb_strtolower(trim($email));
 
         return $this;
     }
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * @see UserInterface
-     * TODO: Изменить этот метод, чтобы возвращал коллекцию ролей из таблицы ролей
-     * ПОДСКАЗКА: нужно создать таблицу ROLE и связать ее с User с помощью связи Многие-Ко-Многим
-     */
     public function getRoles(): array
     {
-        $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
-
-        return array_unique($roles);
+        return array_values(array_unique(
+            $this->roleEntities
+                ->map(static fn (Role $role): string => $role->getName())
+                ->toArray()
+        ));
     }
 
-    /**
-     * @param list<string> $roles
-     */
-    public function setRoles(array $roles): static
+    public function getRoleEntities(): Collection
     {
-        $this->roles = $roles;
+        return $this->roleEntities;
+    }
+
+    public function addRole(Role $role): static
+    {
+        if (!$this->roleEntities->contains($role)) {
+            $this->roleEntities->add($role);
+        }
 
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
+    public function removeRole(Role $role): static
+    {
+        $this->roleEntities->removeElement($role);
+
+        return $this;
+    }
+
     public function getPassword(): ?string
     {
         return $this->password;
@@ -101,9 +101,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
-     */
     public function __serialize(): array
     {
         $data = (array) $this;
@@ -115,7 +112,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[\Deprecated]
     public function eraseCredentials(): void
     {
-        // @deprecated, to be removed when upgrading to Symfony 8
     }
 
     public function getProfile(): ?Profile
@@ -125,7 +121,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setProfile(Profile $profile): static
     {
-        // set the owning side of the relation if necessary
         if ($profile->getUser() !== $this) {
             $profile->setUser($this);
         }

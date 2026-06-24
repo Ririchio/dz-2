@@ -28,7 +28,6 @@ final class LuckyNumberController extends AbstractController
         $luckyNumber = new LuckyNumber();
         $form = $this->createForm(LuckyNumberType::class, $luckyNumber);
         $form->handleRequest($request);
-        //dd($form->getErrors(true));
 
 
         if ($form->isSubmitted() && $form->isValid()) {

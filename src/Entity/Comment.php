@@ -28,6 +28,12 @@ class Comment
     #[ORM\JoinColumn(nullable: false)]
     private ?Post $post = null;
 
+    #[ORM\Column(options: ['default' => 0])]
+    private int $likes = 0;
+
+    #[ORM\Column(options: ['default' => 0])]
+    private int $dislikes = 0;
+
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
@@ -82,6 +88,44 @@ class Comment
     public function setPost(?Post $post): static
     {
         $this->post = $post;
+
+        return $this;
+    }
+
+    public function getLikes(): int
+    {
+        return $this->likes;
+    }
+
+    public function like(): static
+    {
+        ++$this->likes;
+
+        return $this;
+    }
+
+    public function removeLike(): static
+    {
+        $this->likes = max(0, $this->likes - 1);
+
+        return $this;
+    }
+
+    public function getDislikes(): int
+    {
+        return $this->dislikes;
+    }
+
+    public function dislike(): static
+    {
+        ++$this->dislikes;
+
+        return $this;
+    }
+
+    public function removeDislike(): static
+    {
+        $this->dislikes = max(0, $this->dislikes - 1);
 
         return $this;
     }
