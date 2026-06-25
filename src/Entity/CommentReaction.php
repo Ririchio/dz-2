@@ -64,10 +64,6 @@ class CommentReaction
 
     public function setType(string $type): static
     {
-        if (!in_array($type, [self::LIKE, self::DISLIKE], true)) {
-            throw new \InvalidArgumentException('Unknown reaction type.');
-        }
-
         $this->type = $type;
 
         return $this;

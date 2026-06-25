@@ -126,10 +126,16 @@ final class PostController extends AbstractController
 
     private function canManagePost(Post $post): bool
     {
-        $user = $this->getCurrentUser();
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return true;
+        }
 
-        return $this->isGranted('ROLE_ADMIN')
-            || $post->getProfile()?->getUser()?->getId() === $user->getId();
+        $profile = $post->getProfile();
+        if ($profile === null) {
+            return false;
+        }
+
+        return $profile->getUser() === $this->getCurrentUser();
     }
 
     private function getCurrentUser(): User

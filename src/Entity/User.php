@@ -61,11 +61,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        return array_values(array_unique(
-            $this->roleEntities
-                ->map(static fn (Role $role): string => $role->getName())
-                ->toArray()
-        ));
+        $roles = [];
+
+        foreach ($this->roleEntities as $role) {
+            $roles[] = $role->getName();
+        }
+
+        return $roles;
     }
 
     public function getRoleEntities(): Collection

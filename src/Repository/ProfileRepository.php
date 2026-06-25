@@ -34,13 +34,12 @@ class ProfileRepository extends ServiceEntityRepository
     public function getProfilesWithPostsAndWithoutComments(): array
     {
         return $this->createQueryBuilder('p')
+            ->distinct()
             ->addSelect('user')
             ->innerJoin('p.user', 'user')
             ->innerJoin('p.posts', 'post')
             ->leftJoin(Comment::class, 'c', 'WITH', 'c.author = p')
-            ->groupBy('p.id')
-            ->addGroupBy('user.id')
-            ->having('COUNT(c.id) = 0')
+            ->andWhere('c.id IS NULL')
             ->orderBy('p.id', 'ASC')
             ->getQuery()
             ->getResult();

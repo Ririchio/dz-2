@@ -37,17 +37,13 @@ class CommentRepository extends ServiceEntityRepository
 
     public function getAverageCommentsPerPost(): float
     {
-        $result = $this->getEntityManager()->createQueryBuilder()
-            ->select('COUNT(comment.id) AS commentsCount, COUNT(DISTINCT post.id) AS postsCount')
-            ->from(Post::class, 'post')
-            ->leftJoin('post.comments', 'comment')
-            ->getQuery()
-            ->getSingleResult();
+        $postRepository = $this->getEntityManager()->getRepository(Post::class);
+        $postCount = $postRepository->count([]);
 
-        if ((int) $result['postsCount'] === 0) {
+        if ($postCount === 0) {
             return 0.0;
         }
 
-        return (int) $result['commentsCount'] / (int) $result['postsCount'];
+        return $this->count([]) / $postCount;
     }
 }
